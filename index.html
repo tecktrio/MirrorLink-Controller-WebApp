@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MirrorLink controller</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div id="main_container">
+
+
+        <form onsubmit="Login(event)" id="loginContainer">
+
+            <div style="margin: 10px;">
+                <p style="font-size: small;color: red;font-weight: bold;" id="error"></p>
+
+            </div>
+
+
+            <div style="margin: 10px;">
+                <label for="username" class="label">Admiistrator Username</label><br />
+                <input type="text" id="username" name="username" required class="inputbox" />
+            </div>
+
+            <div style="margin: 10px;">
+                <label for="password" class="label">Administrator Password</label><br />
+                <input type="password" id="password" name="password" required class="inputbox" />
+            </div>
+
+            <div style="margin: 10px;">
+                <label for="password" class="label">Mirror Name</label><br />
+                <input type="text" id="mirror_name" name="mirror_name" required class="inputbox" />
+            </div>
+
+            <div style="margin: 10px;">
+                <label for="password" class="label">Site Name</label><br />
+                <input type="text" id="site_name" name="site_name" required class="inputbox" />
+            </div>
+
+            <div style="display: flex;justify-content: end;">
+                <button type="submit" class="login_button">Login</button>
+            </div>
+        </form>
+
+
+        <div id="UploadContainer" style="display: none;">
+            <label>MirrorLink Content Upload Portal</label>
+            <p>Upload the conten that you want to show on your mirrors.</p>
+            <input type="file" id="fileInput" />
+            <button onclick="uploadFile()">Upload</button>
+        </div>
+
+    </div>
+
+    <script>
+let socket;
+        function Login(e) {
+            e.preventDefault();
+
+            // Get input values
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            const errorText = document.getElementById("error");
+
+            // Basic validation
+            if (username === "" || password === "") {
+                alert("Both fields are required.");
+                return;
+            }
+
+            // Handle login logic (e.g., send credentials to server)
+            console.log("Logging in with:", { username, password });
+
+            // You can use fetch or another method to send this data to your server
+            fetch('http://localhost:8000/AdministratorLogin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            }).then(response => response.json())
+                .then((data) => {
+                    // openDB(data.key);
+                    if (data.status_code == 401) {
+
+                        errorText.innerHTML = data.status_text
+                    }
+                    key = data.ws_secret_key;
+                    console.log(data.status_code)
+                    document.cookie = `sockect_key=${key}`
+
+                    socket = new WebSocket(`ws://localhost:8000/ws/controller/?key=${key}`);
+
+                    // Listen for the connection to be established
+                    socket.onopen = function () {
+                        console.log('WebSocket connection established');
+
+                        const loginContainer = document.getElementById("loginContainer").style.display = 'none';
+                        const UploadContainer = document.getElementById("UploadContainer").style.display = 'flex';
+                    };
+
+                    // Listen for messages from the server
+                    socket.onmessage = function (event) {
+                        const data = JSON.parse(event.data);
+                        console.log('Message from server:', data);
+                    };
+
+
+
+
+                }).catch((error) => {
+                    errorText.value = error
+                })
+
+                
+
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const mirror_name = document.getElementById('mirror_name').value;
+            const site_name = document.getElementById('site_name').value;
+            const content = fileInput.files[0];
+
+            if (!content) {
+                alert('Please select a file');
+                return;
+            }
+
+            // Read the file as binary data
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const fileData = event.target.result;
+                // Send file data via WebSocket
+                socket.send(JSON.stringify({
+                    'service': 'upload_content',
+                    'content_title': content.name,
+                    'content': fileData,
+                    'mirror_name': mirror_name,
+                    'site_name': site_name
+                }));
+            };
+            reader.readAsDataURL(content); // Read file as base64 encoded string
+        }
+
+
+
+
+    </script>
+</body>
+
+</html>
