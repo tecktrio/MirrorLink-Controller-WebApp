@@ -75,7 +75,7 @@ let socket;
             console.log("Logging in with:", { username, password });
 
             // You can use fetch or another method to send this data to your server
-            fetch('http://localhost:8000/AdministratorLogin', {
+            fetch('http://mirrorlinkserver.developingkerala.com/AdministratorLogin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -92,7 +92,7 @@ let socket;
                     console.log(data.status_code)
                     document.cookie = `sockect_key=${key}`
 
-                    socket = new WebSocket(`ws://35.154.117.214:8000/ws/controller/?key=${key}`);
+                    socket = new WebSocket(`wss://mirrorlinkserver.developingkerala.com/ws/controller/?key=${key}`);
 
                     // Listen for the connection to be established
                     socket.onopen = function () {
